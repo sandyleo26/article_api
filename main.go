@@ -1,7 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
+	"strings"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -9,7 +13,14 @@ import (
 )
 
 func main() {
-	fmt.Println("Hello World!")
+
+	http.HandleFunc("/articles", postArticleHandler)
+
+	port := ":4321"
+	log.Println("Starting web server on", port)
+	if err := http.ListenAndServe(port, nil); err != nil {
+		log.Fatal("ListenAndServe:", err)
+	}
 
 	db := OpenDB()
 	defer db.Close()
@@ -22,6 +33,22 @@ func main() {
 	article := article.NewArticle(1, &articleRequest)
 	result := db.Debug().Create(article)
 	fmt.Println(result)
+}
+
+func postArticleHandler(w http.ResponseWriter, r *http.Request) {
+	if strings.EqualFold(r.Method, "POST") {
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.WriteHeader(200)
+		json.NewEncoder(w).Encode(&article.Article{
+			Title: "post",
+		})
+	} else if strings.EqualFold(r.Method, "GET") {
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.WriteHeader(200)
+		json.NewEncoder(w).Encode(&article.Article{
+			Title: "get",
+		})
+	}
 }
 
 //OpenDB open database
