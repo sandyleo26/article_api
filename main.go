@@ -12,43 +12,45 @@ import (
 	"github.com/sandyleo26/article_api/article"
 )
 
+var db *gorm.DB
+
 func main() {
 
-	http.HandleFunc("/articles", postArticleHandler)
+	// open db
+	db = OpenDB()
+	defer db.Close()
 
+	// start web server
+	http.HandleFunc("/articles", PostArticleHandler)
 	port := ":4321"
 	log.Println("Starting web server on", port)
 	if err := http.ListenAndServe(port, nil); err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
-
-	db := OpenDB()
-	defer db.Close()
-
-	articleRequest := article.ArticleRequest{
-		Title: "some title",
-		Body:  "some body",
-		Tags:  []string{"debug", "abc"},
-	}
-	article := article.NewArticle(1, &articleRequest)
-	result := db.Debug().Create(article)
-	fmt.Println(result)
 }
 
-func postArticleHandler(w http.ResponseWriter, r *http.Request) {
-	if strings.EqualFold(r.Method, "POST") {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		w.WriteHeader(200)
-		json.NewEncoder(w).Encode(&article.Article{
-			Title: "post",
-		})
-	} else if strings.EqualFold(r.Method, "GET") {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		w.WriteHeader(200)
-		json.NewEncoder(w).Encode(&article.Article{
-			Title: "get",
-		})
+//PostArticleHandler create article
+func PostArticleHandler(w http.ResponseWriter, r *http.Request) {
+	if !strings.EqualFold(r.Method, "POST") {
+		http.Error(w, "Method not supported", 400)
+		return
 	}
+
+	articleRequest := new(article.ArticleRequest)
+	if err := json.NewDecoder(r.Body).Decode(articleRequest); err != nil {
+		http.Error(w, "Error when parsing request", 400)
+		return
+	}
+
+	newArticle := article.NewArticle(1, articleRequest)
+	result := db.Debug().Create(newArticle)
+	if result.Error != nil {
+		http.Error(w, "Error when creating article", 500)
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(200)
+	json.NewEncoder(w).Encode(newArticle)
 }
 
 //OpenDB open database
@@ -71,5 +73,6 @@ func OpenDB() *gorm.DB {
 	}
 
 	db.LogMode(true)
+	log.Println("database connected!")
 	return db
 }
