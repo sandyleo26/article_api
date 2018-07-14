@@ -11,17 +11,14 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/sandyleo26/article_api/article"
+	"github.com/sandyleo26/article_api/database"
 )
-
-var db *gorm.DB
 
 func main() {
 
 	// open db
-	db = OpenDB()
+	db := database.OpenDB()
 	defer db.Close()
 
 	// setup routes
@@ -53,6 +50,7 @@ func PostArticleHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	newArticle := article.NewArticle(1, articleRequest)
+	db := database.OpenDB()
 	result := db.Debug().Create(newArticle)
 	if result.Error != nil {
 		http.Error(w, "Error when creating article", http.StatusInternalServerError)
@@ -78,6 +76,7 @@ func GetArticleHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var articleFound article.Article
+	db := database.OpenDB()
 	result := db.Debug().Where(&article.Article{ID: id}).First(&articleFound)
 	if result.Error != nil {
 		http.Error(w, fmt.Sprintf("Error when retrieving article (%d)", id), http.StatusNotFound)
@@ -111,6 +110,7 @@ func GetTagHandler(w http.ResponseWriter, r *http.Request) {
 
 	datePlusOneDay := date.Add(time.Hour * 24)
 	var articlesFound []article.Article
+	db := database.OpenDB()
 	result := db.Debug().Where("created_at BETWEEN ? AND ?", date, datePlusOneDay).Order("created_at").Find(&articlesFound)
 	if result.Error != nil {
 		http.Error(w, fmt.Sprintf("Error when retrieving articles on (%v)", date), http.StatusInternalServerError)
@@ -151,28 +151,4 @@ func GetTagHandler(w http.ResponseWriter, r *http.Request) {
 		Articles:    lastTenArticles,
 		RelatedTags: relatedTags,
 	})
-}
-
-//OpenDB open database
-func OpenDB() *gorm.DB {
-	dbHost := "localhost"
-	dbPort := "5432"
-	dbName := "blueco"
-	dbUser := "postgres"
-	dbPass := "pass"
-	dbSSL := "disable"
-
-	connString := fmt.Sprintf("host=%s port=%s dbname=%s user=%s password=%s sslmode=%s", dbHost, dbPort, dbName, dbUser, dbPass, dbSSL)
-
-	driver := "postgres"
-
-	db, err := gorm.Open(driver, connString)
-	if err != nil {
-		fmt.Println("Failed to connect database "+connString+". Error: %v", err)
-		panic("OpenDB error")
-	}
-
-	db.LogMode(true)
-	log.Println("database connected!")
-	return db
 }
