@@ -7,16 +7,17 @@ import (
 
 //Article type definition
 type Article struct {
-	ID        int        `gorm:"primary_key"`
+	ID        int        `json:"id" gorm:"primary_key"`
 	CreatedAt time.Time  `json:"date"`
 	UpdatedAt time.Time  `json:"-"`
 	DeletedAt *time.Time `sql:"index" json:"-"`
 	UserID    uint       `json:"-"`
-	Title     string
-	Body      string
-	Tags      string
+	Title     string     `json:"title"`
+	Body      string     `json:"body"`
+	Tags      string     `json:"tags"`
 }
 
+//ArticleRequest request struct
 type ArticleRequest struct {
 	Title string
 	Body  string

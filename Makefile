@@ -7,6 +7,7 @@ default: container-start
 setup:
 	go get -u github.com/pressly/goose/cmd/goose
 	go get -u github.com/golang/dep/cmd/dep
+	go get -u github.com/gorilla/mux
 
 .PHONY: dep
 dep:
