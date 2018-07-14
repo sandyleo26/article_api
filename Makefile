@@ -8,6 +8,7 @@ setup:
 	go get -u github.com/pressly/goose/cmd/goose
 	go get -u github.com/golang/dep/cmd/dep
 	go get -u github.com/gorilla/mux
+	go get -u github.com/stretchr/testify
 
 .PHONY: dep
 dep:
