@@ -8,6 +8,9 @@ Before doing the following, You need to have docker and golang installed. `GOPAT
 # clone repo
 go get -u github.com/sandyleo26/article_api
 
+# prepare build
+make setup
+
 # change to workdir
 cd $GOPATH/src/github.com/sandyleo26/article_api
 
@@ -16,9 +19,6 @@ make db-container-start
 
 # db migrate
 make db-up
-
-# prepare build
-make setup
 
 # run
 make
