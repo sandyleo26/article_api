@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/sandyleo26/article_api/database"
 )
 
 //PostArticleHandler create article
@@ -25,11 +24,10 @@ func PostArticleHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newArticle := NewArticle(1, articleRequest)
-	db := database.OpenDB()
-	result := db.Debug().Create(newArticle)
-	if result.Error != nil {
+	newArticle, newArticleErr := AddArticle(1, articleRequest)
+	if newArticleErr != nil {
 		http.Error(w, "Error when creating article", http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
@@ -51,10 +49,8 @@ func GetArticleHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var articleFound Article
-	db := database.OpenDB()
-	result := db.Debug().Where(&Article{ID: id}).First(&articleFound)
-	if result.Error != nil {
+	articleFound, articleFoundErr := GetArticle(id)
+	if articleFoundErr != nil {
 		http.Error(w, fmt.Sprintf("Error when retrieving article (%d)", id), http.StatusNotFound)
 		return
 	}
@@ -84,47 +80,13 @@ func GetTagHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	datePlusOneDay := date.Add(time.Hour * 24)
-	var articlesFound []Article
-	db := database.OpenDB()
-	result := db.Debug().Where("created_at BETWEEN ? AND ?", date, datePlusOneDay).Order("created_at").Find(&articlesFound)
-	if result.Error != nil {
+	tagResponse, tagResponseErr := GetTag(tagName, date)
+	if tagResponseErr != nil {
 		http.Error(w, fmt.Sprintf("Error when retrieving articles on (%v)", date), http.StatusInternalServerError)
 		return
 	}
 
-	var relatedTagsMap = make(map[string]bool)
-	var filteredArticles []Article
-	for _, articleFound := range articlesFound {
-		if strings.Contains(articleFound.Tags, tagName) {
-			filteredArticles = append(filteredArticles, articleFound)
-			tags := strings.Split(articleFound.Tags, ",")
-			for _, tag := range tags {
-				if !strings.EqualFold(tag, tagName) {
-					relatedTagsMap[tag] = true
-				}
-			}
-		}
-	}
-
-	var relatedTags = make([]string, 0)
-	for t := range relatedTagsMap {
-		relatedTags = append(relatedTags, t)
-	}
-
-	var lastTenArticles = make([]string, 0)
-	for _, articleFound := range filteredArticles {
-		if len(lastTenArticles) != 10 {
-			lastTenArticles = append(lastTenArticles, strconv.Itoa(articleFound.ID))
-		}
-	}
-
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(&TagResponse{
-		Tag:         tagName,
-		Count:       len(filteredArticles),
-		Articles:    lastTenArticles,
-		RelatedTags: relatedTags,
-	})
+	json.NewEncoder(w).Encode(tagResponse)
 }
