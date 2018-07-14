@@ -33,7 +33,7 @@ I use `curl` for testing. Other tool like postman will also work.
 
 ```
 # post an article
-curl -X POST http://localhost:4321/articles -d "@article_data.json"
+curl -X POST http://localhost:4321/articles -d "@example/article_data.json"
 
 # get article by id
 curl -i -X GET http://localhost:4321/articles/1
